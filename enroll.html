@@ -3,19 +3,18 @@
 <head>
   <title>Face Enrollment</title>
 
-  <!-- ✅ Load face-api.js from CDN -->
+  <!-- ✅ Load face-api.js -->
   <script defer src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
 
-  <!-- ✅ Your script -->
   <script defer>
     window.onload = async () => {
       const video = document.getElementById('video');
 
-      // ✅ Load models from jsDelivr CDN
+      // ✅ Load models from alternative reliable CDN
       await Promise.all([
-        faceapi.nets.tinyFaceDetector.loadFromUri('https://cdn.jsdelivr.net/gh/justadudewhohacks/face-api.js-models@master/tiny_face_detector_model'),
-        faceapi.nets.faceLandmark68Net.loadFromUri('https://cdn.jsdelivr.net/gh/justadudewhohacks/face-api.js-models@master/face_landmark_68_model'),
-        faceapi.nets.faceRecognitionNet.loadFromUri('https://cdn.jsdelivr.net/gh/justadudewhohacks/face-api.js-models@master/face_recognition_model')
+        faceapi.nets.tinyFaceDetector.loadFromUri('https://face-api.js.org/models'),
+        faceapi.nets.faceLandmark68Net.loadFromUri('https://face-api.js.org/models'),
+        faceapi.nets.faceRecognitionNet.loadFromUri('https://face-api.js.org/models')
       ]);
 
       console.log("Models loaded");
