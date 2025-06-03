@@ -1,36 +1,41 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Enroll Face</title>
+  <title>Face Enrollment</title>
 
-  <!-- ✅ Load face-api.js before anything else -->
+  <!-- ✅ Load face-api.js from CDN -->
   <script defer src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
 
-  <!-- ✅ Defer your custom script to run AFTER face-api.js is loaded -->
+  <!-- ✅ Your script -->
   <script defer>
     window.onload = async () => {
       const video = document.getElementById('video');
 
+      // ✅ Load models from jsDelivr CDN
       await Promise.all([
-        faceapi.nets.tinyFaceDetector.loadFromUri('/models'),
-        faceapi.nets.faceLandmark68Net.loadFromUri('/models'),
-        faceapi.nets.faceRecognitionNet.loadFromUri('/models')
+        faceapi.nets.tinyFaceDetector.loadFromUri('https://cdn.jsdelivr.net/gh/justadudewhohacks/face-api.js-models@master/tiny_face_detector_model'),
+        faceapi.nets.faceLandmark68Net.loadFromUri('https://cdn.jsdelivr.net/gh/justadudewhohacks/face-api.js-models@master/face_landmark_68_model'),
+        faceapi.nets.faceRecognitionNet.loadFromUri('https://cdn.jsdelivr.net/gh/justadudewhohacks/face-api.js-models@master/face_recognition_model')
       ]);
 
       console.log("Models loaded");
 
       document.getElementById("start").onclick = () => {
-        navigator.mediaDevices.getUserMedia({ video: {} })
+        navigator.mediaDevices.getUserMedia({ video: true })
           .then(stream => video.srcObject = stream)
-          .catch(err => console.error(err));
+          .catch(err => console.error("Camera error:", err));
       };
 
       document.getElementById("enroll").onclick = async () => {
-        const detection = await faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions()).withFaceLandmarks().withFaceDescriptor();
-        if (!detection) return alert("No face detected.");
+        const username = document.getElementById("username").value.trim();
+        if (!username) return alert("Please enter a name.");
 
-        const username = document.getElementById("username").value;
-        if (!username) return alert("Enter your name!");
+        const detection = await faceapi
+          .detectSingleFace(video, new faceapi.TinyFaceDetectorOptions())
+          .withFaceLandmarks()
+          .withFaceDescriptor();
+
+        if (!detection) return alert("No face detected. Try again.");
 
         const descriptor = Array.from(detection.descriptor);
         localStorage.setItem(`face_${username}`, JSON.stringify(descriptor));
@@ -44,6 +49,7 @@
   <input type="text" id="username" placeholder="Enter your name" />
   <button id="start">Start Camera</button>
   <button id="enroll">Capture & Save</button>
+  <br><br>
   <video id="video" width="720" height="560" autoplay muted></video>
 </body>
 </html>
