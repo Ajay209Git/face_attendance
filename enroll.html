@@ -2,42 +2,48 @@
 <html>
 <head>
   <title>Enroll Face</title>
-  <!-- Load face-api.js from CDN -->
+
+  <!-- ✅ Load face-api.js before anything else -->
   <script defer src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
+
+  <!-- ✅ Defer your custom script to run AFTER face-api.js is loaded -->
+  <script defer>
+    window.onload = async () => {
+      const video = document.getElementById('video');
+
+      await Promise.all([
+        faceapi.nets.tinyFaceDetector.loadFromUri('/models'),
+        faceapi.nets.faceLandmark68Net.loadFromUri('/models'),
+        faceapi.nets.faceRecognitionNet.loadFromUri('/models')
+      ]);
+
+      console.log("Models loaded");
+
+      document.getElementById("start").onclick = () => {
+        navigator.mediaDevices.getUserMedia({ video: {} })
+          .then(stream => video.srcObject = stream)
+          .catch(err => console.error(err));
+      };
+
+      document.getElementById("enroll").onclick = async () => {
+        const detection = await faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions()).withFaceLandmarks().withFaceDescriptor();
+        if (!detection) return alert("No face detected.");
+
+        const username = document.getElementById("username").value;
+        if (!username) return alert("Enter your name!");
+
+        const descriptor = Array.from(detection.descriptor);
+        localStorage.setItem(`face_${username}`, JSON.stringify(descriptor));
+        alert(`Face enrolled for ${username}`);
+      };
+    };
+  </script>
 </head>
 <body>
   <h2>Enroll Your Face</h2>
   <input type="text" id="username" placeholder="Enter your name" />
-  <button onclick="startVideo()">Start Camera</button>
-  <button onclick="enroll()">Capture & Save</button>
+  <button id="start">Start Camera</button>
+  <button id="enroll">Capture & Save</button>
   <video id="video" width="720" height="560" autoplay muted></video>
-
-  <script>
-    const video = document.getElementById('video');
-
-    Promise.all([
-      faceapi.nets.tinyFaceDetector.loadFromUri('/models'),
-      faceapi.nets.faceLandmark68Net.loadFromUri('/models'),
-      faceapi.nets.faceRecognitionNet.loadFromUri('/models')
-    ]).then(() => console.log("Models loaded"));
-
-    function startVideo() {
-      navigator.mediaDevices.getUserMedia({ video: {} })
-        .then(stream => video.srcObject = stream)
-        .catch(err => console.error(err));
-    }
-
-    async function enroll() {
-      const detection = await faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions()).withFaceLandmarks().withFaceDescriptor();
-      if (!detection) return alert("No face detected.");
-
-      const username = document.getElementById("username").value;
-      if (!username) return alert("Enter your name!");
-
-      const descriptor = Array.from(detection.descriptor);
-      localStorage.setItem(`face_${username}`, JSON.stringify(descriptor));
-      alert(`Face enrolled for ${username}`);
-    }
-  </script>
 </body>
 </html>
