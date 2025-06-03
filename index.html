@@ -1,18 +1,16 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Enroll Face</title>
+  <title>Face Attendance</title>
   <script defer src="https://cdn.jsdelivr.net/npm/face-api.js"></script>
 </head>
 <body>
-  <h2>Enroll Your Face</h2>
-  <input type="text" id="username" placeholder="Enter your name" />
-  <button onclick="startVideo()">Start Camera</button>
-  <button onclick="enroll()">Capture & Save</button>
+  <h2>Face Recognition for Attendance</h2>
+  <button onclick="startRecognition()">Start Camera & Recognize</button>
   <video id="video" width="720" height="560" autoplay muted></video>
 
   <script>
-    const video = document.getElementById('video');
+    const video = document.getElementById("video");
 
     Promise.all([
       faceapi.nets.tinyFaceDetector.loadFromUri('/models'),
@@ -26,16 +24,51 @@
         .catch(err => console.error(err));
     }
 
-    async function enroll() {
-      const detection = await faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions()).withFaceLandmarks().withFaceDescriptor();
-      if (!detection) return alert("No face detected.");
+    async function loadLabeledDescriptors() {
+      const keys = Object.keys(localStorage).filter(k => k.startsWith("face_"));
+      return Promise.all(
+        keys.map(k => {
+          const name = k.replace("face_", "");
+          const descriptor = new Float32Array(JSON.parse(localStorage.getItem(k)));
+          return new faceapi.LabeledFaceDescriptors(name, [descriptor]);
+        })
+      );
+    }
 
-      const username = document.getElementById("username").value;
-      if (!username) return alert("Enter your name!");
+    async function startRecognition() {
+      await startVideo();
 
-      const descriptor = Array.from(detection.descriptor);
-      localStorage.setItem(`face_${username}`, JSON.stringify(descriptor));
-      alert(`Face enrolled for ${username}`);
+      const labeledDescriptors = await loadLabeledDescriptors();
+      const faceMatcher = new faceapi.FaceMatcher(labeledDescriptors, 0.6);
+
+      video.addEventListener("play", () => {
+        const canvas = faceapi.createCanvasFromMedia(video);
+        document.body.append(canvas);
+        const displaySize = { width: video.width, height: video.height };
+        faceapi.matchDimensions(canvas, displaySize);
+
+        setInterval(async () => {
+          const detections = await faceapi.detectAllFaces(video, new faceapi.TinyFaceDetectorOptions()).withFaceLandmarks().withFaceDescriptors();
+          const resized = faceapi.resizeResults(detections, displaySize);
+          canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
+
+          const results = resized.map(d => faceMatcher.findBestMatch(d.descriptor));
+          results.forEach((result, i) => {
+            if (result.label !== "unknown") {
+              console.log("Matched:", result.label);
+              logAttendance(result.label);
+            }
+          });
+        }, 5000);
+      });
+    }
+
+    function logAttendance(name) {
+      fetch("YOUR_GOOGLE_APPS_SCRIPT_WEBAPP_URL", {
+        method: "POST",
+        body: JSON.stringify({ name }),
+        headers: { "Content-Type": "application/json" }
+      }).then(res => console.log("Logged:", name));
     }
   </script>
 </body>
