@@ -64,7 +64,7 @@
     }
 
     function logAttendance(name) {
-      fetch("YOUR_GOOGLE_APPS_SCRIPT_WEBAPP_URL", {
+      fetch("https://script.google.com/macros/s/AKfycbxb7Yw0DYiaHVRiVE7RWXpxY_4WTZY6ZjUKxEJZAQrKJavIYdy252or3T3g16teOGm6fA/exec", {
         method: "POST",
         body: JSON.stringify({ name }),
         headers: { "Content-Type": "application/json" }
